@@ -1,0 +1,4 @@
+viser>=1.0.0
+pyserial>=3.5
+numpy>=1.20.0
+scipy>=1.10.0
