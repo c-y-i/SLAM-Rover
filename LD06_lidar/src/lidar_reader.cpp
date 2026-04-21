@@ -7,6 +7,9 @@ namespace lidar
 namespace
 {
 
+constexpr float kSensorYawOffsetDeg = 0.0f;
+constexpr bool kMirrorScanYAxis = true;
+
 constexpr uint8_t kCrcTable[256] = {
     0x00, 0x4d, 0x9a, 0xd7, 0x79, 0x34, 0xe3, 0xae, 0xf2, 0xbf, 0x68,
     0x25, 0x8b, 0xc6, 0x11, 0x5c, 0xa9, 0xe4, 0x33, 0x7e, 0xd0, 0x9d,
@@ -98,7 +101,8 @@ bool Reader::decode_packet(const uint8_t *packet, PacketSummary &summary)
     const float physical_angle_deg =
         normalize_angle(summary.start_angle_deg +
                         ((static_cast<float>(i) + 0.5f) * step_deg));
-    const float angle_deg = normalize_angle(360.0f - physical_angle_deg);
+    const float angle_deg =
+        normalize_angle(360.0f - physical_angle_deg + kSensorYawOffsetDeg);
     const float angle_rad = angle_deg * DEG_TO_RAD;
 
     ScanPoint point;
@@ -106,7 +110,8 @@ bool Reader::decode_packet(const uint8_t *packet, PacketSummary &summary)
     point.distance_mm = distance_mm;
     point.intensity = intensity;
     point.x_mm = static_cast<int16_t>(lroundf(distance_mm * cosf(angle_rad)));
-    point.y_mm = static_cast<int16_t>(lroundf(-distance_mm * sinf(angle_rad)));
+    point.y_mm = static_cast<int16_t>(
+        lroundf((kMirrorScanYAxis ? 1.0f : -1.0f) * distance_mm * sinf(angle_rad)));
     point.valid = distance_mm > 0;
     summary.points[i] = point;
 
