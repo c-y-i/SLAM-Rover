@@ -11,8 +11,8 @@ Rover with LD06 LiDAR + BNO085 IMU, with 2D SLAM running on a host PC. Firmware 
 | Folder | Description |
 |---|---|
 | [rover_stack/](rover_stack/) | Rover firmware (ESP32, PlatformIO) and host Python tools |
-| [slam/](slam/) | Pure-Python SLAM package — ICP, occupancy grid, orchestration thread |
-| [slam_sim/](slam_sim/) | Hardware-free SLAM simulator with viser UI |
+| [slam/](slam/) | Pure-Python SLAM package + hardware-free simulator (`slam/sim.py`) |
+| [slam_sim/](slam_sim/) | Compatibility launcher for the simulator (legacy path) |
 
 ### Standalone sensor subsystems
 
@@ -22,29 +22,29 @@ Each can be used on its own, independent of the rover.
 |---|---|---|
 | [LD06_lidar/](LD06_lidar/) | Feather ESP32 v2 + LD06 | 2D LiDAR streaming + live top-down viewer |
 | [VL53L5CX_tof/](VL53L5CX_tof/) | Feather ESP32 v2 + VL53L5CX + MPU6050 | 8×8 ToF depth streaming + live 3D point cloud viewer |
-| [py_scripts/](py_scripts/) | — | Shared host-side Python viewer code for the above |
+| [py_scripts/](py_scripts/) | — | Shared host-side Python workspace (sensor viewers + rover tools) |
 
 ## Try it without hardware
 
 ```bash
-python slam_sim/sim.py --map office
+python -m slam.sim --map office
 # open http://localhost:8080
 ```
 
 ## Run with the rover
 
 ```bash
-cd rover_stack/py
+cd py_scripts
 python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
 
-python controller_teleop.py --port /dev/ttyACM0 --baud 460800 --web-port 8080 --slam
+python -m rover_tools.controller_teleop --port /dev/ttyACM0 --baud 460800 --web-port 8080 --slam
 ```
 
 Record and replay:
 
 ```bash
-python record.py --port /dev/ttyACM0 --output run1.jsonl
-python replay.py --file run1.jsonl [--speed 2.0]
+python -m rover_tools.record --port /dev/ttyACM0 --output run1.jsonl
+python -m rover_tools.replay --file run1.jsonl [--speed 2.0]
 ```
 
 ## Flash firmware

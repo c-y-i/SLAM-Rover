@@ -6,7 +6,7 @@ Agent and contributor guide for adding pure-Python 2D LiDAR+IMU SLAM to the rove
 
 | Already exists | Location |
 |---|---|
-| JSON serial pipeline (`scan`, `imu`, `status`) | `rover_stack/py/controller_teleop.py` — `ControllerTeleopBridge` |
+| JSON serial pipeline (`scan`, `imu`, `status`) | `py_scripts/rover_tools/controller_teleop.py` — `ControllerTeleopBridge` |
 | Thread-safe `ScanSnapshot` (x_m, y_m, distance_m, intensity, yaw_deg, yaw_rate_dps) | same file |
 | `LD06Viewer.update_pose(x, y, theta_rad)` + `get_latest_scan()` SLAM hooks | `py_scripts/sensor_viewers/ld06_viewer/viewer.py:96` |
 | World-frame map accumulation driven by pose | `ld06_viewer/viewer.py:152` |
@@ -24,18 +24,19 @@ slam/                           ← standalone pure-Python SLAM package
 ├── __init__.py
 ├── icp.py                      ← scan preprocessing + point-to-point ICP
 ├── occupancy_grid.py           ← log-odds grid with Bresenham ray-casting
-└── slam_thread.py              ← orchestration thread; duck-typed bridge interface
-
-slam_sim/                       ← hardware-free simulator
-├── __init__.py
+├── slam_thread.py              ← orchestration thread; duck-typed bridge interface
 └── sim.py                      ← synthetic world, scripted robot, viser display
 
-rover_stack/py/
-└── controller_teleop.py        ← adds sys.path + imports SlamThread when --slam passed
+slam_sim/                       ← compatibility launcher package
+├── __init__.py
+└── sim.py                      ← forwards to `slam.sim`
+
+py_scripts/rover_tools/
+└── controller_teleop.py        ← imports `slam.slam_thread.SlamThread` when --slam passed
 ```
 
-Both `slam_sim/sim.py` and `controller_teleop.py` add the repo root to `sys.path`
-and then `from slam.slam_thread import SlamThread`. No installation needed.
+Primary commands are `python -m slam.sim` and `python -m rover_tools.controller_teleop ...`.
+`slam_sim/sim.py` and `rover_stack/py/*.py` are compatibility launchers.
 
 ## Algorithm: IMU-Assisted ICP SLAM
 
@@ -271,7 +272,7 @@ numpy       ← already present
 scipy       ← for KDTree; already pulled by viser indirectly; add to requirements.txt if absent
 ```
 
-Add to `rover_stack/py/requirements.txt`:
+Add to `py_scripts/requirements.txt`:
 ```
 scipy>=1.11
 ```
@@ -282,7 +283,7 @@ Test SLAM without hardware:
 
 ```bash
 # from repo root
-python slam_sim/sim.py [--web-port 8080] [--map random|office|warehouse|maze] [--seed 42]
+python -m slam.sim [--web-port 8080] [--map random|office|warehouse|maze] [--seed 42]
 ```
 
 **Map presets** (`--map`):
@@ -314,14 +315,14 @@ python slam_sim/sim.py [--web-port 8080] [--map random|office|warehouse|maze] [-
 Record real rover telemetry to disk:
 
 ```bash
-cd rover_stack/py
-python record.py --port /dev/ttyACM0 [--output run1.jsonl]
+cd py_scripts
+python -m rover_tools.record --port /dev/ttyACM0 [--output run1.jsonl]
 ```
 
 Replay offline through SLAM (no hardware):
 
 ```bash
-python replay.py --file run1.jsonl [--web-port 8080] [--speed 2.0]
+python -m rover_tools.replay --file run1.jsonl [--web-port 8080] [--speed 2.0]
 # --speed 0 = as fast as possible
 ```
 

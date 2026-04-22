@@ -24,13 +24,14 @@ Project-local code stays in each sensor project:
 - Project launch scripts
 - Device-specific serial protocol
 
-Note: `rover_stack/py/` is **not** a consumer of `py_scripts/`. It has its own `requirements.txt` and tooling. The SLAM package lives at `slam/` (repo root), not in `py_scripts/`.
+Note: `rover_stack/py/` now contains **compatibility wrappers** that forward to `py_scripts/rover_tools/`. Shared dependencies still come from `py_scripts/requirements.txt`. The SLAM package lives at `slam/` (repo root), not in `py_scripts/`.
 
 ## Layout
 
 ```
 py_scripts/
 ├── requirements.txt
+├── rover_tools/          teleop + record + replay tools for rover workflows
 └── sensor_viewers/
     ├── ld06_viewer/         2D top-down viewer for LD06_lidar
     └── vl53l5cx_viewer/     3D point cloud viewer for VL53L5CX_tof

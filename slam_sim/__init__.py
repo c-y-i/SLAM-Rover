@@ -1,1 +1,1 @@
-"""Synthetic SLAM simulator — no hardware required."""
+"""Compatibility package for the simulator moved to `slam.sim`."""

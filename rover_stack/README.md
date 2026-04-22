@@ -8,7 +8,7 @@ Robot-control suite — two PlatformIO firmware projects (ESP32) and host-side t
 rover_stack/
 ├── controller/     USB bridge: PC serial <-> ESP-NOW <-> bot
 ├── bot/            robot firmware: motors + LD06 + BNO085 + telemetry
-└── py/             host tools: teleop, web viewer, SLAM, record, replay
+└── py/             compatibility launchers for host tools
 ```
 
 ## Data Flow
@@ -46,10 +46,12 @@ Update `kBotMac` in `controller/src/main.cpp` to match your bot board's MAC addr
 
 ## Host Tools
 
-All tools live in `py/`. One-time setup:
+Canonical host tools now live in `py_scripts/rover_tools/`.
+
+One-time setup:
 
 ```bash
-cd py
+cd ../py_scripts
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -58,7 +60,7 @@ pip install -r requirements.txt
 ### Teleop + viewer
 
 ```bash
-python controller_teleop.py --port /dev/ttyACM0 --baud 460800 --web-port 8080
+python -m rover_tools.controller_teleop --port /dev/ttyACM0 --baud 460800 --web-port 8080
 ```
 
 Open `http://localhost:8080`. Keyboard controls active in the terminal.
@@ -66,7 +68,7 @@ Open `http://localhost:8080`. Keyboard controls active in the terminal.
 ### Teleop + SLAM
 
 ```bash
-python controller_teleop.py --port /dev/ttyACM0 --baud 460800 --web-port 8080 --slam
+python -m rover_tools.controller_teleop --port /dev/ttyACM0 --baud 460800 --web-port 8080 --slam
 ```
 
 Runs the SLAM stack (`slam/`) in a background thread:
@@ -80,7 +82,7 @@ Runs the SLAM stack (`slam/`) in a background thread:
 ### Record a session
 
 ```bash
-python record.py --port /dev/ttyACM0 [--baud 460800] [--output run1.jsonl]
+python -m rover_tools.record --port /dev/ttyACM0 [--baud 460800] [--output run1.jsonl]
 ```
 
 Writes timestamped JSONL — every JSON line from the controller gets a `wall_s` field prepended.
@@ -88,8 +90,10 @@ Writes timestamped JSONL — every JSON line from the controller gets a `wall_s`
 ### Replay offline
 
 ```bash
-python replay.py --file run1.jsonl [--web-port 8080] [--speed 2.0]
+python -m rover_tools.replay --file run1.jsonl [--web-port 8080] [--speed 2.0]
 # --speed 0 = as fast as possible
 ```
 
 Feeds the recording through the full SLAM stack without any hardware. Keeps the viser viewer alive after replay ends for map inspection.
+
+Legacy commands from `rover_stack/py/` still work via compatibility wrappers.
