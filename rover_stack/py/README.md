@@ -1,19 +1,18 @@
 # rover_stack Python tools
 
-Suite-local host tooling for the rover stack workflow.
+Host-side tooling for the SLAM Rover workflow.
 
-## Included tool
+## Tools
 
-- `controller_teleop.py` — single-process bridge that combines:
-  - keyboard teleop (`1`, `2`, `x`, `w/a/s/d/q/e`, direct `Lf200` commands)
-  - controller USB serial I/O
-  - live web lidar viewer (viser)
-  - IMU health + heading/turn-rate display when IMU telemetry is present
+| Script | What it does |
+|---|---|
+| `controller_teleop.py` | Keyboard teleop + controller USB I/O + live web viewer (+ optional `--slam`) |
+| `record.py` | Records controller JSON telemetry to a timestamped JSONL file |
+| `replay.py` | Replays a recording through the full SLAM stack without hardware |
 
 ## Setup
 
 ```bash
-cd py
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -22,9 +21,17 @@ pip install -r requirements.txt
 ## Run
 
 ```bash
+# Teleop + viewer
 python controller_teleop.py --port /dev/ttyACM0 --baud 460800 --web-port 8080
+
+# Teleop + SLAM
+python controller_teleop.py --port /dev/ttyACM0 --baud 460800 --web-port 8080 --slam
+
+# Record a session
+python record.py --port /dev/ttyACM0 --output run1.jsonl
+
+# Replay offline at 2× speed
+python replay.py --file run1.jsonl --speed 2.0
 ```
 
-Then open `http://localhost:8080`.
-
-The TA_Bot reference script remains at `../../../Arduino/5100/TA_Bot/scripts/controller_teleop.py`.
+Open `http://localhost:8080` for the web viewer.

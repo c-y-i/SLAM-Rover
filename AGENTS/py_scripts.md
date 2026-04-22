@@ -2,46 +2,39 @@
 
 Authoritative guide for agents and contributors working in `py_scripts/`.
 
-The shared viewer workspace exists so multiple sensor projects can reuse one host-side Python runtime, scene system, and dependency set instead of copying viewer code into each firmware project.
+The shared viewer workspace lets multiple sensor projects reuse one host-side Python runtime, scene system, and dependency set instead of copying viewer code into each firmware project.
 
 ## Purpose
 
-- Keep reusable Python viewer logic in one place
-- Let firmware projects keep thin wrappers and launch scripts
-- Make it safe to grow support for multiple sensors without duplicating rendering/runtime code
+- Single source of truth for reusable Python viewer logic
+- Firmware projects keep thin wrappers and launch scripts; real code lives here
+- Safe to add sensor support without duplicating rendering or runtime code
 
 ## Ownership Boundaries
 
 Shared code belongs in `py_scripts/` when it is reusable across projects:
 
 - `py_scripts/requirements.txt`
-- `py_scripts/sensor_viewers/`
-- shared scene, geometry, runtime, GUI, and host-side serial handling code
+- `py_scripts/sensor_viewers/` — viewer implementations per sensor
 
 Project-local code stays in each sensor project:
 
 - PlatformIO firmware
-- sensor wiring details
-- project launch scripts
-- device-specific serial protocol unless a deliberate shared abstraction is introduced
+- Sensor wiring details
+- Project launch scripts
+- Device-specific serial protocol
+
+Note: `rover_stack/py/` is **not** a consumer of `py_scripts/`. It has its own `requirements.txt` and tooling. The SLAM package lives at `slam/` (repo root), not in `py_scripts/`.
 
 ## Layout
 
 ```
 py_scripts/
-├── requirements.txt              shared Python dependency set
-├── sensor_viewers/
-│   ├── ld06_viewer/              2D top-down viewer for LD06_lidar
-│   └── vl53l5cx_viewer/          3D point cloud viewer for VL53L5CX_tof
+├── requirements.txt
+└── sensor_viewers/
+    ├── ld06_viewer/         2D top-down viewer for LD06_lidar
+    └── vl53l5cx_viewer/     3D point cloud viewer for VL53L5CX_tof
 ```
-
-## Package Contract
-
-- Shared viewer modules live under `py_scripts/sensor_viewers/`
-- Each sensor viewer: `sensor_viewers/<sensor_name>_viewer/`
-- Project-local `viewer/` folders are wrappers/entrypoints only
-- Shared dependencies belong in `py_scripts/requirements.txt`
-- Reusable scene/rendering/runtime utilities belong here, not copied into each project
 
 ## Environment
 
@@ -54,7 +47,7 @@ pip install -r requirements.txt
 
 ## Testing Expectations
 
-When changing shared Python viewer code:
+When changing shared viewer code:
 
 - run `python -m compileall` as a syntax/import check
 - confirm README run instructions still match reality
