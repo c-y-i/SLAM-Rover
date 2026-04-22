@@ -8,9 +8,6 @@ LD06-style LiDAR scans + BNO085 IMU yaw, and runs the real SLAM stack.
 Usage (from repo root):
     python -m slam.sim [--web-port 8080] [--map random|office|warehouse|maze] [--seed 42]
 
-Compatibility launcher also exists:
-    python slam_sim/sim.py ...
-
 Open http://localhost:<web-port>.
 
     Blue   trail / axes → ground truth

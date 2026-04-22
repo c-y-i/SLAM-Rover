@@ -12,7 +12,6 @@ Rover with LD06 LiDAR + BNO085 IMU, with 2D SLAM running on a host PC. Firmware 
 |---|---|
 | [rover_stack/](rover_stack/) | Rover firmware (ESP32, PlatformIO) and host Python tools |
 | [slam/](slam/) | Pure-Python SLAM package + hardware-free simulator (`slam/sim.py`) |
-| [slam_sim/](slam_sim/) | Compatibility launcher for the simulator (legacy path) |
 
 ### Standalone sensor subsystems
 

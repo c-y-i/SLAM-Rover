@@ -27,16 +27,11 @@ slam/                           ← standalone pure-Python SLAM package
 ├── slam_thread.py              ← orchestration thread; duck-typed bridge interface
 └── sim.py                      ← synthetic world, scripted robot, viser display
 
-slam_sim/                       ← compatibility launcher package
-├── __init__.py
-└── sim.py                      ← forwards to `slam.sim`
-
 py_scripts/rover_tools/
 └── controller_teleop.py        ← imports `slam.slam_thread.SlamThread` when --slam passed
 ```
 
 Primary commands are `python -m slam.sim` and `python -m rover_tools.controller_teleop ...`.
-`slam_sim/sim.py` and `rover_stack/py/*.py` are compatibility launchers.
 
 ## Algorithm: IMU-Assisted ICP SLAM
 

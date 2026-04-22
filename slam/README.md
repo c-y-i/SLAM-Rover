@@ -28,12 +28,6 @@ From repo root:
 python -m slam.sim --map office
 ```
 
-You can also use the compatibility path:
-
-```bash
-python slam_sim/sim.py --map office
-```
-
 Common flags:
 
 - `--web-port 8080` viewer port
