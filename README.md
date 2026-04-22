@@ -1,64 +1,63 @@
 # SLAM Rover
 
-A rover you can actually deploy. ESP32-C3 bot + controller, LD06 LiDAR, BNO085 IMU, and a pure-Python SLAM stack that runs on any laptop — no ROS, no Docker, no drama.
+Rover with LD06 LiDAR + BNO085 IMU, with 2D SLAM running on a host PC. Firmware written for ESP32 via PlatformIO. Pure Python for now, ROS2 support to be added.
 
-Point it at a wall, watch it map the room, drive it with a keyboard. That's the idea.
+> So far just deploying this on small platforms like mechatronics course TA bot, and drones for indoor mapping.
 
-## What's in the box
+## What's here
 
-| Component | Where |
+### Rover
+
+| Folder | Description |
 |---|---|
-| Bot + controller firmware (ESP32-C3, ESP-NOW) | [rover_stack/](rover_stack/) |
-| Pure-Python SLAM (ICP + occupancy grid) | [slam/](slam/) |
-| Hardware-free SLAM simulator | [slam_sim/](slam_sim/) |
-| LD06 LiDAR standalone firmware + viewer | [LD06_lidar/](LD06_lidar/) |
-| VL53L5CX ToF standalone firmware + viewer | [VL53L5CX_tof/](VL53L5CX_tof/) |
-| Shared Python viewer code | [py_scripts/](py_scripts/) |
+| [rover_stack/](rover_stack/) | Rover firmware (ESP32, PlatformIO) and host Python tools |
+| [slam/](slam/) | Pure-Python SLAM package — ICP, occupancy grid, orchestration thread |
+| [slam_sim/](slam_sim/) | Hardware-free SLAM simulator with viser UI |
 
-## Try it now (no hardware needed)
+### Standalone sensor subsystems
+
+Each can be used on its own, independent of the rover.
+
+| Folder | Hardware | Description |
+|---|---|---|
+| [LD06_lidar/](LD06_lidar/) | Feather ESP32 v2 + LD06 | 2D LiDAR streaming + live top-down viewer |
+| [VL53L5CX_tof/](VL53L5CX_tof/) | Feather ESP32 v2 + VL53L5CX + MPU6050 | 8×8 ToF depth streaming + live 3D point cloud viewer |
+| [py_scripts/](py_scripts/) | — | Shared host-side Python viewer code for the above |
+
+## Try it without hardware
 
 ```bash
 python slam_sim/sim.py --map office
+# open http://localhost:8080
 ```
 
-Open `http://localhost:8080`. Watch a simulated rover navigate and build a map in real time. Switch maps, add noise, pause and resume — all from the browser.
-
-## Run on real hardware
+## Run with the rover
 
 ```bash
 cd rover_stack/py
 python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
 
-# Drive it and map it
 python controller_teleop.py --port /dev/ttyACM0 --baud 460800 --web-port 8080 --slam
 ```
 
-Record a run, replay it later:
+Record and replay:
 
 ```bash
-python record.py  --port /dev/ttyACM0 --output run1.jsonl
-python replay.py  --file run1.jsonl --speed 0   # as fast as possible
+python record.py --port /dev/ttyACM0 --output run1.jsonl
+python replay.py --file run1.jsonl [--speed 2.0]
 ```
 
-## Flash the firmware
+## Flash firmware
 
 ```bash
 cd rover_stack/controller && platformio run --target upload
 cd rover_stack/bot        && platformio run --target upload
 ```
 
-Set `kBotMac` in `controller/src/main.cpp` to your bot board's MAC address before flashing.
+Set `kBotMac` in `controller/src/main.cpp` to your bot's MAC address.
 
-## Goals
+## Agent guides (for you vibe coders...)
 
-- Drop-in SLAM for any differential-drive robot with a 2D LiDAR and an absolute-heading IMU
-- No native extensions — pure numpy/scipy, runs wherever Python runs
-- Modular: swap the hardware bridge, keep the SLAM stack unchanged
-
-## Agent guides
-
-Working with an AI coding assistant? Start here:
-
-- [AGENTS/rover_stack.md](AGENTS/rover_stack.md) — firmware + host tooling
-- [AGENTS/slam.md](AGENTS/slam.md) — SLAM algorithm, sim, recording
-- [AGENTS/py_scripts.md](AGENTS/py_scripts.md) — shared Python viewer workspace
+- [AGENTS/rover_stack.md](AGENTS/rover_stack.md)
+- [AGENTS/slam.md](AGENTS/slam.md)
+- [AGENTS/py_scripts.md](AGENTS/py_scripts.md)

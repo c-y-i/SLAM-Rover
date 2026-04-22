@@ -4,8 +4,8 @@ Agent and contributor guide for `rover_stack/`.
 
 ## Project Boundaries
 
-- `rover_stack/controller/` — ESP32-C3 USB bridge firmware (PlatformIO)
-- `rover_stack/bot/` — ESP32-C3 robot firmware (PlatformIO)
+- `rover_stack/controller/` — USB bridge firmware (PlatformIO, ESP32)
+- `rover_stack/bot/` — robot firmware (PlatformIO, ESP32)
 - `rover_stack/py/` — host tools: teleop, web viewer, record, replay, SLAM integration
 - `slam/` — standalone SLAM package at repo root (imported by py tools and simulator)
 - `py_scripts/` — shared viewer code reused across sensor projects (not rover-specific)

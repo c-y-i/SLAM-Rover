@@ -1,6 +1,6 @@
 # Rover Stack
 
-ESP32-C3 robot-control suite — two PlatformIO firmware projects and host-side tooling.
+Robot-control suite — two PlatformIO firmware projects (ESP32) and host-side tooling.
 
 ## Layout
 
