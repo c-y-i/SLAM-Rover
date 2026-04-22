@@ -1,6 +1,6 @@
-# Shared Python Viewers
+# Shared Python Scripts
 
-Host-side viewer code shared across sensor projects in this workspace. One virtualenv, one dependency set, one scene runtime.
+Host-side Python code shared across embedded-toolkit projects. Today this is mostly viewers, with room for future host tools.
 
 ## Modules
 
@@ -10,7 +10,7 @@ Host-side viewer code shared across sensor projects in this workspace. One virtu
 ## Install
 
 ```bash
-cd python_viewers
+cd py_scripts
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -30,7 +30,7 @@ From `VL53L5CX_tof/` using the convenience scripts:
 ./scripts/run_viewer.sh --port /dev/ttyACM0
 ```
 
-Or directly from `python_viewers/`:
+Or directly from `py_scripts/`:
 
 ```bash
 python -m sensor_viewers.vl53l5cx_viewer --port /dev/ttyACM0

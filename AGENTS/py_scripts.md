@@ -1,6 +1,6 @@
-# Python Viewers — Agent Guide
+# Python Scripts — Agent Guide
 
-Authoritative guide for agents and contributors working in `python_viewers/`.
+Authoritative guide for agents and contributors working in `py_scripts/`.
 
 The shared viewer workspace exists so multiple sensor projects can reuse one host-side Python runtime, scene system, and dependency set instead of copying viewer code into each firmware project.
 
@@ -12,10 +12,10 @@ The shared viewer workspace exists so multiple sensor projects can reuse one hos
 
 ## Ownership Boundaries
 
-Shared code belongs in `python_viewers/` when it is reusable across projects:
+Shared code belongs in `py_scripts/` when it is reusable across projects:
 
-- `python_viewers/requirements.txt`
-- `python_viewers/sensor_viewers/`
+- `py_scripts/requirements.txt`
+- `py_scripts/sensor_viewers/`
 - shared scene, geometry, runtime, GUI, and host-side serial handling code
 
 Project-local code stays in each sensor project:
@@ -28,7 +28,7 @@ Project-local code stays in each sensor project:
 ## Layout
 
 ```
-python_viewers/
+py_scripts/
 ├── requirements.txt              shared Python dependency set
 ├── sensor_viewers/
 │   ├── ld06_viewer/              2D top-down viewer for LD06_lidar
@@ -37,16 +37,16 @@ python_viewers/
 
 ## Package Contract
 
-- Shared viewer modules live under `python_viewers/sensor_viewers/`
+- Shared viewer modules live under `py_scripts/sensor_viewers/`
 - Each sensor viewer: `sensor_viewers/<sensor_name>_viewer/`
 - Project-local `viewer/` folders are wrappers/entrypoints only
-- Shared dependencies belong in `python_viewers/requirements.txt`
+- Shared dependencies belong in `py_scripts/requirements.txt`
 - Reusable scene/rendering/runtime utilities belong here, not copied into each project
 
 ## Environment
 
 ```bash
-cd python_viewers
+cd py_scripts
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -64,5 +64,5 @@ When changing shared Python viewer code:
 
 - Prefer behavior-level reuse over copy-paste
 - Do not silently migrate a project from local viewer logic to shared logic without updating docs
-- Update `python_viewers/README.md` when shared layout or usage changes
+- Update `py_scripts/README.md` when shared layout or usage changes
 - Update the consuming project README if the shared setup or launch flow changes

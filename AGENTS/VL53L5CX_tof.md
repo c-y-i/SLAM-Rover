@@ -6,7 +6,7 @@ Agent and contributor guide for `VL53L5CX_tof/`.
 
 - `VL53L5CX_tof/src/` — ESP32 firmware (PlatformIO, Adafruit Feather ESP32 v2)
 - `VL53L5CX_tof/viewer/` — thin compatibility wrapper; entrypoint only, no real logic
-- `python_viewers/sensor_viewers/vl53l5cx_viewer/` — shared host-side viewer (real implementation)
+- `py_scripts/sensor_viewers/vl53l5cx_viewer/` — shared host-side viewer (real implementation)
 - `VL53L5CX_tof/scripts/` — convenience scripts for virtualenv setup and viewer launch
 
 ## Firmware Protocol
@@ -29,7 +29,7 @@ JSON lines over USB serial at `460800` baud.
 
 ## Viewer
 
-Real implementation lives in `python_viewers/sensor_viewers/vl53l5cx_viewer/`. The `VL53L5CX_tof/viewer/` folder is a compatibility wrapper — its `requirements.txt` forwards to `../../python_viewers/requirements.txt`.
+Real implementation lives in `py_scripts/sensor_viewers/vl53l5cx_viewer/`. The `VL53L5CX_tof/viewer/` folder is a compatibility wrapper — its `requirements.txt` forwards to `../../py_scripts/requirements.txt`.
 
 When changing the desktop viewer: edit the shared package, not the wrapper.
 
@@ -45,7 +45,7 @@ The scripts use a `.venv/` created at `VL53L5CX_tof/.venv/`. The `run_viewer.sh`
 
 ## Rules
 
-- Prefer editing `python_viewers/sensor_viewers/vl53l5cx_viewer/` for viewer changes
+- Prefer editing `py_scripts/sensor_viewers/vl53l5cx_viewer/` for viewer changes
 - Keep `VL53L5CX_tof/viewer/` as a thin wrapper; do not move real logic back into it
 - Keep firmware serial protocol generation in `VL53L5CX_tof/src/sensor_streamer.cpp`
 - Update `VL53L5CX_tof/README.md` if hardware wiring, protocol, or setup flow changes

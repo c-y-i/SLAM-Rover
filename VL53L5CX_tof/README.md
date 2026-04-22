@@ -43,7 +43,7 @@ Expected I2C addresses:
   ESP32 firmware that probes sensors and streams serial JSON
 - `viewer/`
   Thin compatibility wrapper so this project can still launch the shared viewer with `python -m viewer`
-- `../python_viewers/`
+- `../py_scripts/`
   Shared host-side Python viewer code for this workspace
 - `scripts/setup_viewer_env.sh`
   Creates a local virtual environment and installs viewer dependencies
@@ -203,8 +203,8 @@ This is expected in this version. `MPU6050` is a 6-DoF IMU with no magnetometer,
 
 ## Notes
 
-- Viewer dependencies: [viewer/requirements.txt](viewer/requirements.txt) (forwards to `../python_viewers/requirements.txt`)
-- Shared viewer code: [../python_viewers/sensor_viewers/vl53l5cx_viewer/](../python_viewers/sensor_viewers/vl53l5cx_viewer/)
+- Viewer dependencies: [viewer/requirements.txt](viewer/requirements.txt) (forwards to `../py_scripts/requirements.txt`)
+- Shared viewer code: [../py_scripts/sensor_viewers/vl53l5cx_viewer/](../py_scripts/sensor_viewers/vl53l5cx_viewer/)
 - Agent guide: [../AGENTS/VL53L5CX_tof.md](../AGENTS/VL53L5CX_tof.md)
-- Scene and pose defaults: [../python_viewers/sensor_viewers/vl53l5cx_viewer/config.py](../python_viewers/sensor_viewers/vl53l5cx_viewer/config.py)
+- Scene and pose defaults: [../py_scripts/sensor_viewers/vl53l5cx_viewer/config.py](../py_scripts/sensor_viewers/vl53l5cx_viewer/config.py)
 - Firmware protocol: [src/sensor_streamer.cpp](src/sensor_streamer.cpp)

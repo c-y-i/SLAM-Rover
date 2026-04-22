@@ -5,8 +5,8 @@ Agent and contributor guide for `LD06_lidar/`.
 ## Project Boundaries
 
 - `LD06_lidar/src/` — ESP32 firmware (PlatformIO, Adafruit Feather ESP32 v2)
-- `python_viewers/sensor_viewers/ld06_viewer/` — shared host-side viewer
-- `LD06_lidar/` has no project-local viewer wrapper; run directly from `python_viewers/`
+- `py_scripts/sensor_viewers/ld06_viewer/` — shared host-side viewer
+- `LD06_lidar/` has no project-local viewer wrapper; run directly from `py_scripts/`
 
 The ESP32 also serves a lightweight web viewer via `web_viewer.h`. That is a separate fallback; do not conflate it with the Python viser viewer.
 
@@ -47,14 +47,14 @@ Heartbeat and lifecycle events.
 ## Run the Viewer
 
 ```bash
-cd python_viewers
+cd py_scripts
 source .venv/bin/activate
 python -m sensor_viewers.ld06_viewer --port /dev/ttyUSB0
 ```
 
 ## Rules
 
-- Prefer editing `python_viewers/sensor_viewers/ld06_viewer/` for viewer changes
+- Prefer editing `py_scripts/sensor_viewers/ld06_viewer/` for viewer changes
 - Keep firmware-specific serial protocol generation in `LD06_lidar/src/`
 - The web viewer (`web_viewer.h`) is firmware-only; do not merge it with the Python viewer
 - Update `LD06_lidar/README.md` if hardware wiring or protocol changes

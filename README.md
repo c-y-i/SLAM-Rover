@@ -16,16 +16,19 @@ A scratchpad for embedded projects - sensors, cameras, motors, flight controller
 
 ## Motors / Actuators
 
+| Folder | Hardware | What it does |
+|---|---|---|
+| [rover_stack/](rover_stack/) | ESP32-C3 controller + ESP32-C3 bot | ESP-NOW control bridge + bot firmware + host teleop/web viewer |
 
 ## Flight Controllers
 
 
-## Shared Python Viewers
+## Shared Python Scripts
 
-[python_viewers/](python_viewers/) holds host-side viewer code shared across projects — one virtualenv, one dependency set, one scene runtime.
+[py_scripts/](py_scripts/) holds host-side Python code shared across projects — viewers plus future tooling.
 
 ```bash
-cd python_viewers
+cd py_scripts
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -35,6 +38,7 @@ pip install -r requirements.txt
 
 Agent guides live in [AGENTS/](AGENTS/). (made this for those of you vibe coders)
 
-- [AGENTS/python_viewers.md](AGENTS/python_viewers.md) — shared viewer workspace rules
+- [AGENTS/py_scripts.md](AGENTS/py_scripts.md) — shared Python workspace rules
 - [AGENTS/LD06_lidar.md](AGENTS/LD06_lidar.md) — LD06 firmware + viewer agent guide
 - [AGENTS/VL53L5CX_tof.md](AGENTS/VL53L5CX_tof.md) — VL53L5CX firmware + viewer agent guide
+- [AGENTS/rover_stack.md](AGENTS/rover_stack.md) — rover stack suite agent guide

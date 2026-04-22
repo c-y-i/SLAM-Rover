@@ -4,7 +4,7 @@ from pathlib import Path
 import sys
 
 
-_SHARED_ROOT = Path(__file__).resolve().parents[2] / "python_viewers"
+_SHARED_ROOT = Path(__file__).resolve().parents[2] / "py_scripts"
 if str(_SHARED_ROOT) not in sys.path:
     sys.path.insert(0, str(_SHARED_ROOT))
 

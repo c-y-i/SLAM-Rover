@@ -2,7 +2,7 @@
 
 Streams LD06 lidar scans (and optional MPU6050 IMU data) from an ESP32 over serial, then renders a live 2D top-down map in a desktop viewer.
 
-The firmware runs on an Adafruit Feather ESP32 v2. The desktop viewer is a Python app built with viser, shared in [../python_viewers/](../python_viewers/).
+The firmware runs on an Adafruit Feather ESP32 v2. The desktop viewer is a Python app built with viser, shared in [../py_scripts/](../py_scripts/).
 
 ## What This Does
 
@@ -67,10 +67,10 @@ Only emitted if MPU6050 is found.
 
 ## Viewer Setup
 
-The viewer lives in the shared `python_viewers/` workspace.
+The viewer lives in the shared `py_scripts/` workspace.
 
 ```bash
-cd ../python_viewers
+cd ../py_scripts
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -98,5 +98,5 @@ The firmware also serves a lightweight 2D web viewer directly from the ESP32. Se
 
 ## Notes
 
-- Shared viewer code: [../python_viewers/sensor_viewers/ld06_viewer/](../python_viewers/sensor_viewers/ld06_viewer/)
+- Shared viewer code: [../py_scripts/sensor_viewers/ld06_viewer/](../py_scripts/sensor_viewers/ld06_viewer/)
 - Agent guide: [../AGENTS/LD06_lidar.md](../AGENTS/LD06_lidar.md)
