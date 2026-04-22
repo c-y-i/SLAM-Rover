@@ -6,7 +6,7 @@ Generates a 2-D world, drives a robot along a waypoint loop, synthesises
 LD06-style LiDAR scans + BNO085 IMU yaw, and runs the real SLAM stack.
 
 Usage (from repo root):
-    python -m slam.sim [--web-port 8080] [--map random|office|warehouse|maze] [--seed 42]
+    python -m slam.sim [--web-port 8080] [--map random|office|warehouse|maze|nav2_*] [--seed 42]
 
 Open http://localhost:<web-port>.
 
@@ -21,179 +21,21 @@ import math
 import threading
 import time
 from dataclasses import dataclass
-from typing import NamedTuple
+from pathlib import Path
+import sys
 
 import numpy as np
 import viser
 
-from .slam_thread import SlamThread
-
-# ── world types ───────────────────────────────────────────────────────────────
-
-Wall = tuple[tuple[float, float], tuple[float, float]]
-
-
-class World(NamedTuple):
-    walls: list[Wall]
-    waypoints: list[tuple[float, float]]
-    room_w: float
-    room_h: float
-
-
-# ── world builders ────────────────────────────────────────────────────────────
-
-def _outer(w: float, h: float) -> list[Wall]:
-    hw, hh = w / 2, h / 2
-    return [
-        ((-hw, -hh), (hw, -hh)),
-        ((hw,  -hh), (hw,  hh)),
-        ((hw,   hh), (-hw, hh)),
-        ((-hw,  hh), (-hw,-hh)),
-    ]
-
-
-def _box(cx: float, cy: float, bw: float, bh: float) -> list[Wall]:
-    x0, y0, x1, y1 = cx - bw/2, cy - bh/2, cx + bw/2, cy + bh/2
-    return [
-        ((x0, y0), (x1, y0)), ((x1, y0), (x1, y1)),
-        ((x1, y1), (x0, y1)), ((x0, y1), (x0, y0)),
-    ]
-
-
-def _random_waypoints(
-    room_w: float, room_h: float,
-    obstacles: list[tuple[float, float, float, float]],
-    n: int, rng: np.random.Generator,
-) -> list[tuple[float, float]]:
-    margin = 1.5
-    pts: list[tuple[float, float]] = []
-    for _ in range(n * 60):
-        if len(pts) >= n:
-            break
-        x = float(rng.uniform(-room_w/2 + margin, room_w/2 - margin))
-        y = float(rng.uniform(-room_h/2 + margin, room_h/2 - margin))
-        if not any(abs(x - cx) < bw/2 + 0.8 and abs(y - cy) < bh/2 + 0.8
-                   for cx, cy, bw, bh in obstacles):
-            pts.append((x, y))
-    return pts or [(0.0, 0.0)]
-
-
-def build_random(seed: int | None = None) -> World:
-    """Random mix of rectangular obstacles and partial stub walls."""
-    rng = np.random.default_rng(seed)
-    W, H = 20.0, 14.0
-    walls = _outer(W, H)
-    boxes: list[tuple[float, float, float, float]] = []
-
-    for _ in range(int(rng.integers(4, 8)) * 6):
-        if len(boxes) >= 7:
-            break
-        bw = float(rng.uniform(1.0, 4.0))
-        bh = float(rng.uniform(1.0, 4.0))
-        cx = float(rng.uniform(-W/2 + 2.5, W/2 - 2.5))
-        cy = float(rng.uniform(-H/2 + 2.5, H/2 - 2.5))
-        if any(abs(cx - ox) < (bw + ow)/2 + 1.0 and abs(cy - oy) < (bh + oh)/2 + 1.0
-               for ox, oy, ow, oh in boxes):
-            continue
-        boxes.append((cx, cy, bw, bh))
-        walls += _box(cx, cy, bw, bh)
-
-    for _ in range(int(rng.integers(3, 6))):
-        cx = float(rng.uniform(-W/2 + 2, W/2 - 2))
-        cy = float(rng.uniform(-H/2 + 2, H/2 - 2))
-        length = float(rng.uniform(2.0, 5.0))
-        angle  = float(rng.choice([0.0, math.pi/2, math.pi/4, -math.pi/4]))
-        dx, dy = length/2 * math.cos(angle), length/2 * math.sin(angle)
-        walls.append(((cx - dx, cy - dy), (cx + dx, cy + dy)))
-
-    wps = _random_waypoints(W, H, boxes, 10, rng)
-    return World(walls=walls, waypoints=wps, room_w=W, room_h=H)
-
-
-def build_office() -> World:
-    """Two rooms joined by a doorway — classic SLAM corridor test."""
-    walls = _outer(18.0, 12.0)
-    walls += [
-        ((0.0, -6.0), (0.0, -1.8)),   # dividing wall, lower
-        ((0.0,  1.8), (0.0,  6.0)),   # dividing wall, upper (gap = doorway)
-    ]
-    walls += _box(-6.0, -3.0, 2.0, 1.2)   # desk
-    walls += _box(-6.0,  3.0, 2.0, 1.2)   # desk
-    walls += _box( 5.0,  0.0, 2.5, 4.0)   # cabinet
-    walls += _box( 5.0, -4.0, 1.5, 1.5)   # table
-    wps = [(-7,-5), (-7,5), (-1,0), (1,-4), (7,-5), (7,5), (1,4), (-1,0)]
-    return World(walls=walls, waypoints=wps, room_w=18.0, room_h=12.0)
-
-
-def build_warehouse() -> World:
-    """Grid of shelving units — long straight aisles, repetitive geometry."""
-    walls = _outer(22.0, 16.0)
-    for row_y in (-5.0, 0.0, 5.0):
-        for col_x in (-7.0, -3.0, 1.0, 5.0):
-            walls += _box(col_x, row_y, 1.2, 3.0)
-    wps = [(-9,-7), (9,-7), (9,7), (-9,7), (0,-2.5), (0,2.5)]
-    return World(walls=walls, waypoints=wps, room_w=22.0, room_h=16.0)
-
-
-def build_maze() -> World:
-    """Alternating horizontal baffles — tests ICP in repetitive environments."""
-    walls = _outer(18.0, 16.0)
-    for i, y in enumerate((-6.0, -2.0, 2.0, 6.0)):
-        if i % 2 == 0:
-            walls.append(((-8.0, y), (2.5, y)))   # open on the right
-        else:
-            walls.append(((-2.5, y), (8.0, y)))   # open on the left
-    # Some pillars for extra features
-    for px, py in ((-6, -4), (6, 4), (0, 0)):
-        walls += _box(px, py, 0.8, 0.8)
-    wps = [(-6,-7), (6,-7), (6,-3), (-6,1), (6,1), (-6,5), (6,7), (-6,7)]
-    return World(walls=walls, waypoints=wps, room_w=18.0, room_h=16.0)
-
-
-MAP_BUILDERS = {
-    "random":    build_random,
-    "office":    build_office,
-    "warehouse": build_warehouse,
-    "maze":      build_maze,
-}
-
-# ── ray casting ───────────────────────────────────────────────────────────────
-
-N_RAYS    = 360
-MAX_RANGE = 8.0
-
-
-def _ray_hit(ox: float, oy: float, dx: float, dy: float,
-             ax: float, ay: float, bx: float, by: float) -> float | None:
-    sx, sy = bx - ax, by - ay
-    denom = dx * sy - dy * sx
-    if abs(denom) < 1e-10:
-        return None
-    qpx, qpy = ax - ox, ay - oy
-    t = (qpx * sy - qpy * sx) / denom
-    u = (qpx * dy - qpy * dx) / denom
-    return t if t >= 0.0 and 0.0 <= u <= 1.0 else None
-
-
-def cast_scan(
-    rx: float, ry: float, theta: float,
-    walls: list[Wall], noise_m: float,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    world_a = np.linspace(0.0, 2 * math.pi, N_RAYS, endpoint=False) + theta
-    ranges  = np.full(N_RAYS, MAX_RANGE)
-    for i, ang in enumerate(world_a):
-        dx, dy = math.cos(ang), math.sin(ang)
-        for (ax, ay), (bx, by) in walls:
-            d = _ray_hit(rx, ry, dx, dy, ax, ay, bx, by)
-            if d is not None and d < ranges[i]:
-                ranges[i] = d
-    if noise_m > 0:
-        ranges += np.random.normal(0.0, noise_m, N_RAYS)
-    ranges = np.clip(ranges, 0.02, MAX_RANGE).astype(np.float32)
-    robot_a = np.linspace(0.0, 2 * math.pi, N_RAYS, endpoint=False)
-    x_m = (ranges * np.cos(robot_a)).astype(np.float32)
-    y_m = (ranges * np.sin(robot_a)).astype(np.float32)
-    return x_m, y_m, ranges
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from slam.slam_thread import SlamThread
+    from slam.sim_world import BASE_SPEED_M_S, MAX_RANGE, MAP_BUILDERS, SCAN_HZ
+    from slam.plot_sim import MAP_CHOICES, _build_environment
+else:
+    from .slam_thread import SlamThread
+    from .sim_world import BASE_SPEED_M_S, MAX_RANGE, MAP_BUILDERS, SCAN_HZ
+    from .plot_sim import MAP_CHOICES, _build_environment
 
 
 # ── mock bridge ───────────────────────────────────────────────────────────────
@@ -248,10 +90,6 @@ def _wrap(a: float) -> float:
 
 # ── simulator ─────────────────────────────────────────────────────────────────
 
-SCAN_HZ        = 10.0
-BASE_SPEED_M_S = 1.0
-
-
 class Simulator:
     def __init__(self, map_name: str, seed: int | None, server: viser.ViserServer) -> None:
         self._map_name = map_name
@@ -280,16 +118,15 @@ class Simulator:
         self._slam:   SlamThread | None = None
         self._truth_frame: viser.FrameHandle | None = None
 
-        self._world = self._make_world()
-        self._rx, self._ry = self._world.waypoints[0]
+        self._env = self._make_environment()
+        self._rx, self._ry = self._env.waypoints[0]
         self._rebuild_scene()
         self._setup_gui()
 
     # ── world / scene ────────────────────────────────────────────────────────
 
-    def _make_world(self) -> World:
-        b = MAP_BUILDERS[self._map_name]
-        return b(self._seed) if self._map_name == "random" else b()
+    def _make_environment(self):
+        return _build_environment(self._map_name, self._seed)
 
     def _clear_world_nodes(self) -> None:
         for p in self._wall_paths:
@@ -299,7 +136,7 @@ class Simulator:
             self._server.scene.remove_by_name(p)
 
     def _draw_walls(self) -> None:
-        for i, ((ax, ay), (bx, by)) in enumerate(self._world.walls):
+        for i, ((ax, ay), (bx, by)) in enumerate(self._env.walls):
             pts  = np.array([[ax, ay, 0.0], [bx, by, 0.0]], dtype=np.float32)
             path = f"/world/wall_{i}"
             self._server.scene.add_spline_catmull_rom(
@@ -443,8 +280,8 @@ class Simulator:
         self._reset_flag = False
         if self._map_name == "random":
             self._seed = None  # new seed → new layout
-        self._world = self._make_world()
-        self._rx, self._ry = self._world.waypoints[0]
+        self._env = self._make_environment()
+        self._rx, self._ry = self._env.waypoints[0]
         self._rtheta  = 0.0
         self._scan_count = 0
         self._wp_idx  = 1
@@ -470,7 +307,7 @@ class Simulator:
                     time.sleep(0.05)
                     continue
 
-                wps      = self._world.waypoints
+                wps      = self._env.waypoints
                 tx, ty   = wps[self._wp_idx % len(wps)]
                 if self._step_toward(tx, ty, dt):
                     self._wp_idx += 1
@@ -481,8 +318,8 @@ class Simulator:
                 yaw_rate_dps = math.degrees(self._rtheta - prev_theta) / dt
                 prev_theta   = self._rtheta
 
-                x_m, y_m, dist_m = cast_scan(
-                    self._rx, self._ry, self._rtheta, self._world.walls, self._range_noise,
+                x_m, y_m, dist_m = self._env.scan_fn(
+                    self._rx, self._ry, self._rtheta, self._range_noise,
                 )
                 inten = np.clip((1 - dist_m / MAX_RANGE) * 200 + 55, 0, 255).astype(np.uint8)
                 self._scan_count += 1
@@ -514,7 +351,7 @@ class Simulator:
 def main() -> None:
     parser = argparse.ArgumentParser(description="SLAM simulator — no hardware required")
     parser.add_argument("--web-port", type=int, default=8080)
-    parser.add_argument("--map",  choices=list(MAP_BUILDERS), default="random",
+    parser.add_argument("--map",  choices=MAP_CHOICES, default="random",
                         help="World layout  (default: random)")
     parser.add_argument("--seed", type=int, default=None,
                         help="RNG seed for --map random; omit for a new map each run")

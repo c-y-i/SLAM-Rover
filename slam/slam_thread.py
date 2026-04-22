@@ -32,7 +32,8 @@ logger = logging.getLogger("slam")
 
 # ICP correction beyond this (on top of the IMU prediction) is treated as
 # divergence and the frame is skipped.
-MAX_ICP_CORRECTION = math.radians(15.0)
+MAX_ICP_CORRECTION = math.radians(8.0)
+MAX_ICP_TRANSLATION_M = 0.35
 
 MIN_POINTS = 20
 GRID_PUSH_INTERVAL_S = 0.5
@@ -140,14 +141,19 @@ class SlamThread:
 
         # How much ICP deviated from the IMU seed — large deviation = bad match.
         icp_correction = icp_theta - delta_theta
+        translation_norm = float(np.linalg.norm(t))
 
-        if not ok or abs(icp_correction) > MAX_ICP_CORRECTION:
-            # ICP diverged: trust IMU for rotation, skip translation update.
+        # Trust IMU for heading to prevent long-horizon rotational drift.
+        self._theta = prev_theta + delta_theta
+
+        if (
+            not ok
+            or abs(icp_correction) > MAX_ICP_CORRECTION
+            or translation_norm > MAX_ICP_TRANSLATION_M
+        ):
+            # ICP diverged: keep IMU heading, skip translation update.
             logger.debug("ICP skipped: ok=%s correction=%.1f°", ok, math.degrees(icp_correction))
-            self._theta = prev_theta + delta_theta
         else:
-            # R encodes total relative rotation (delta_theta + ICP refinement).
-            self._theta = prev_theta + icp_theta
             # t is in the PREVIOUS robot frame — rotate to world frame first.
             c, s = math.cos(prev_theta), math.sin(prev_theta)
             self._x += c * float(t[0]) - s * float(t[1])

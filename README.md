@@ -30,6 +30,24 @@ python -m slam.sim --map office
 # open http://localhost:8080
 ```
 
+Plot-only (no browser UI):
+
+```bash
+python -m slam.plot_sim
+```
+
+Static (non-live) plot:
+
+```bash
+python -m slam.plot_sim --no-live
+```
+
+Plot on bundled static maps:
+
+```bash
+python -m slam.plot_sim --map nav2_tb3_sandbox
+```
+
 ## Run with the rover
 
 ```bash

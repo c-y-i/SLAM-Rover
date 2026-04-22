@@ -38,6 +38,7 @@ def icp_2d(
     tol: float = 1e-4,
     outlier_factor: float = 3.0,
     min_correspondences: int = 10,
+    max_correspondence_dist: float = 0.6,
 ) -> tuple[np.ndarray, np.ndarray, bool]:
     """
     Point-to-point ICP aligning `source` onto `target`.
@@ -71,7 +72,7 @@ def icp_2d(
         if med == 0.0:
             ok = True
             break
-        mask = dist < outlier_factor * med
+        mask = (dist < outlier_factor * med) & (dist < max_correspondence_dist)
         if mask.sum() < min_correspondences:
             break
 
