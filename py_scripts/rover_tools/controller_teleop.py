@@ -27,6 +27,7 @@ MAX_PWM = 220
 SEND_INTERVAL_S = 0.08
 PANEL_REFRESH_S = 0.1
 LOOP_SLEEP_S = 0.02
+PANEL_HEARTBEAT_S = 1.0
 
 
 @dataclass
@@ -149,11 +150,13 @@ class ControllerTeleopBridge:
             left -= KEY_STEP_PWM
             right -= KEY_STEP_PWM
         elif key == "a":
-            left -= KEY_STEP_PWM
-            right += KEY_STEP_PWM
+            left_delta, right_delta = self._steer_deltas("a")
+            left += left_delta
+            right += right_delta
         elif key == "d":
-            left += KEY_STEP_PWM
-            right -= KEY_STEP_PWM
+            left_delta, right_delta = self._steer_deltas("d")
+            left += left_delta
+            right += right_delta
         elif key == "q":
             left -= SPIN_STEP_PWM
             right += SPIN_STEP_PWM
@@ -165,6 +168,12 @@ class ControllerTeleopBridge:
         self._log_queue.put(
             f"target -> L {self.drive.target_left:+d}  R {self.drive.target_right:+d}"
         )
+
+    def _steer_deltas(self, key: str) -> tuple[int, int]:
+        reversing = self._is_reversing()
+        if key == "a":
+            return (KEY_STEP_PWM, -KEY_STEP_PWM) if reversing else (-KEY_STEP_PWM, KEY_STEP_PWM)
+        return (-KEY_STEP_PWM, KEY_STEP_PWM) if reversing else (KEY_STEP_PWM, -KEY_STEP_PWM)
 
     def send_direct_motor(self, command: str) -> None:
         self.send_line(command + "\n")
@@ -183,7 +192,11 @@ class ControllerTeleopBridge:
             self.drive.current_left != self.drive.last_sent_left
             or self.drive.current_right != self.drive.last_sent_right
         )
-        if changed or (now - self.drive.last_send_wall) >= SEND_INTERVAL_S:
+        should_keepalive = (
+            not self._is_fully_stopped()
+            and (now - self.drive.last_send_wall) >= SEND_INTERVAL_S
+        )
+        if changed or should_keepalive:
             self._send_wheel_speeds(force=changed)
 
     def _send_wheel_speeds(self, force: bool = False) -> None:
@@ -198,6 +211,19 @@ class ControllerTeleopBridge:
         self.drive.last_sent_left = self.drive.current_left
         self.drive.last_sent_right = self.drive.current_right
         self.drive.last_send_wall = now
+
+    def _is_fully_stopped(self) -> bool:
+        return (
+            self.drive.target_left == 0
+            and self.drive.target_right == 0
+            and self.drive.current_left == 0
+            and self.drive.current_right == 0
+        )
+
+    def _is_reversing(self) -> bool:
+        target_avg = self.drive.target_left + self.drive.target_right
+        current_avg = self.drive.current_left + self.drive.current_right
+        return target_avg < 0 or (target_avg == 0 and current_avg < 0)
 
     def get_snapshot(self) -> ScanSnapshot:
         with self._state_lock:
@@ -549,7 +575,7 @@ def _render_panel(
         f"  right  current={teleop.drive.current_right:+4d}  target={teleop.drive.target_right:+4d}",
         "",
         "Controls",
-        "  1 auto wall-follow   2 ramped teleop   x/space stop",
+        "  1 lidar wander   2 ramped teleop   x/space stop",
         "  w/s forward/reverse ramp",
         "  a/d steer left/right",
         "  q/e spin left/right",
@@ -562,6 +588,33 @@ def _render_panel(
     recent = log_lines[-8:] if log_lines else ["(no recent serial lines)"]
     lines.extend(f"  {line}" for line in recent)
     return "\x1b[2J\x1b[H" + "\n".join(lines)
+
+
+def _panel_signature(
+    teleop: ControllerTeleopBridge,
+    snapshot: ScanSnapshot,
+    log_lines: list[str],
+    viewer_url: str,
+) -> tuple[object, ...]:
+    recent = tuple(log_lines[-8:]) if log_lines else ("(no recent serial lines)",)
+    return (
+        teleop.port,
+        teleop.baud,
+        viewer_url,
+        teleop.current_mode,
+        _direction_label(teleop.drive.current_left, teleop.drive.current_right),
+        snapshot.connected,
+        snapshot.imu_connected,
+        snapshot.imu_ok,
+        round(snapshot.yaw_deg, 1),
+        round(snapshot.yaw_rate_dps, 1),
+        teleop.drive.current_left,
+        teleop.drive.target_left,
+        teleop.drive.current_right,
+        teleop.drive.target_right,
+        snapshot.status_text,
+        recent,
+    )
 
 
 def _print_summary(teleop: ControllerTeleopBridge, snapshot: ScanSnapshot) -> None:
@@ -590,6 +643,8 @@ def _run_loop(teleop: ControllerTeleopBridge, viewer: TeleopWebViewer) -> None:
 
     log_lines: list[str] = []
     last_panel_wall = 0.0
+    last_panel_heartbeat_wall = 0.0
+    last_panel_signature: tuple[object, ...] | None = None
     is_windows = os.name == "nt"
     posix_keyboard = None
 
@@ -625,12 +680,19 @@ def _run_loop(teleop: ControllerTeleopBridge, viewer: TeleopWebViewer) -> None:
 
             for message in teleop.drain_logs():
                 if not message.startswith("status -> ") or "controller: ready" not in message:
-                    log_lines.append(message)
+                    if not log_lines or log_lines[-1] != message:
+                        log_lines.append(message)
 
             now = time.time()
             if now - last_panel_wall >= PANEL_REFRESH_S:
                 last_panel_wall = now
-                print(_render_panel(teleop, snapshot, log_lines, viewer.url), end="", flush=True)
+                panel_signature = _panel_signature(teleop, snapshot, log_lines, viewer.url)
+                heartbeat_due = (now - last_panel_heartbeat_wall) >= PANEL_HEARTBEAT_S
+                if panel_signature != last_panel_signature or heartbeat_due:
+                    panel = _render_panel(teleop, snapshot, log_lines, viewer.url)
+                    print(panel, end="", flush=True)
+                    last_panel_signature = panel_signature
+                    last_panel_heartbeat_wall = now
 
             time.sleep(LOOP_SLEEP_S)
     finally:
