@@ -1,1 +1,1 @@
-"""Rover host-side tools: teleop, record, replay."""
+"""Rover host-side tools: teleop and telemetry recording."""

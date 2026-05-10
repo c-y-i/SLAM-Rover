@@ -1,4 +1,4 @@
-"""LD06 lidar 2D top-down viewer with map accumulation and SLAM hooks."""
+"""LD06 lidar 2D top-down viewer with map accumulation."""
 
 from __future__ import annotations
 
@@ -70,19 +70,16 @@ class LD06Viewer:
     """
     Viser-based 2D top-down viewer for the LD06 lidar.
 
-    SLAM integration hooks
-    ----------------------
-    Call ``update_pose(x, y, theta_rad)`` from your SLAM thread to move the
-    robot frame in world space.  The current scan is rendered in the robot
-    frame so it auto-transforms with pose updates.  ``get_latest_scan()``
-    returns the most recent ``ScanSnapshot`` for your algorithm to consume.
+    Call ``update_pose(x, y, theta_rad)`` to move the robot frame in world
+    space. The current scan is rendered in the robot frame so it auto-transforms
+    with pose updates.
     """
 
     def __init__(self, port: str, baud: int = config.BAUD_RATE) -> None:
         self.serial_reader = SerialReader(port, baud)
         self.scene = None
 
-        # Robot pose (set by SLAM or left at identity)
+        # Robot pose in the world frame.
         self._robot_x = 0.0
         self._robot_y = 0.0
         self._robot_theta = 0.0
@@ -91,16 +88,16 @@ class LD06Viewer:
         self._map: deque[tuple[np.ndarray, np.ndarray, np.ndarray]] = deque()
         self._last_scan_count = -1
 
-    # ── SLAM hooks ────────────────────────────────────────────────────────────
+    # ── pose and scan access ──────────────────────────────────────────────────
 
     def update_pose(self, x: float, y: float, theta_rad: float) -> None:
-        """Update the robot's estimated world pose (call from SLAM thread)."""
+        """Update the robot's estimated world pose."""
         self._robot_x = x
         self._robot_y = y
         self._robot_theta = theta_rad
 
     def get_latest_scan(self) -> ScanSnapshot:
-        """Return the latest scan snapshot (call from SLAM thread)."""
+        """Return the latest scan snapshot."""
         return self.serial_reader.get_snapshot()
 
     # ── internal ──────────────────────────────────────────────────────────────

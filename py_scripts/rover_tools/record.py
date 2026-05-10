@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Record rover_stack controller telemetry to a JSONL file for offline SLAM replay.
+Record rover_stack controller telemetry to a JSONL file.
 
 Each JSON line from the controller gets a "wall_s" timestamp prepended before
-being written.  The file can then be fed into replay.py.
+being written.
 
 Usage:
     python -m rover_tools.record --port /dev/ttyACM0 [--baud 460800] [--output recording.jsonl]

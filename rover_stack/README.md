@@ -1,13 +1,13 @@
-# Rover Stack
+# Example Rover Integration
 
-Robot-control suite — two PlatformIO firmware projects (ESP32) and host-side tooling.
+Example ESP32 robot integration for the `LD06_LiDAR` library. It shows one way to put the LD06 on a small rover, stream scan telemetry over a controller bridge, and use host-side tools for teleop and viewing.
 
 ## Layout
 
 ```text
 rover_stack/
-├── controller/     USB bridge: PC serial <-> ESP-NOW <-> bot
-└── bot/            robot firmware: motors + LD06 + BNO085 + telemetry
+├── controller/     example USB bridge: PC serial <-> ESP-NOW <-> bot
+└── bot/            example robot firmware: motors + LD06 + BNO085 + telemetry
 ```
 
 ## Data Flow
@@ -15,7 +15,7 @@ rover_stack/
 - Control:   `PC → Controller USB serial → ESP-NOW → Bot`
 - Telemetry: `Bot sensors → ESP-NOW → Controller → USB serial → Host tools`
 
-## Firmware
+## Example Firmware
 
 ### `controller/`
 
@@ -43,7 +43,7 @@ cd ../bot     && platformio run
 
 Update `kBotMac` in `controller/src/main.cpp` to match your bot board's MAC address.
 
-## Host Tools
+## Host Tools For The Example
 
 Host tools live in the repo-level `py_scripts/rover_tools/` package.
 
@@ -64,20 +64,6 @@ python -m rover_tools.controller_teleop --port /dev/ttyACM0 --baud 460800 --web-
 
 Open `http://localhost:8080`. Keyboard controls active in the terminal.
 
-### Teleop + SLAM
-
-```bash
-python -m rover_tools.controller_teleop --port /dev/ttyACM0 --baud 460800 --web-port 8080 --slam
-```
-
-Runs the SLAM stack (`slam/`) in a background thread:
-
-- BNO085 absolute yaw seeds each ICP iteration as a rotation prior
-- Point-to-point ICP (scipy KDTree + SVD) estimates translation between consecutive scans
-- Occupancy grid built via Bresenham ray-casting, rendered in the viewer as `/slam/grid`
-- Robot frame in the web viewer tracks the estimated pose
-- Without `--slam` the teleop is unchanged
-
 ### Record a session
 
 ```bash
@@ -85,14 +71,5 @@ python -m rover_tools.record --port /dev/ttyACM0 [--baud 460800] [--output run1.
 ```
 
 Writes timestamped JSONL — every JSON line from the controller gets a `wall_s` field prepended.
-
-### Replay offline
-
-```bash
-python -m rover_tools.replay --file run1.jsonl [--web-port 8080] [--speed 2.0]
-# --speed 0 = as fast as possible
-```
-
-Feeds the recording through the full SLAM stack without any hardware. Keeps the viser viewer alive after replay ends for map inspection.
 
 Run host tools from `../py_scripts`.

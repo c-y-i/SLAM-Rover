@@ -2,7 +2,7 @@
   "name": "LD06_LiDAR",
   "version": "0.1.0",
   "description": "Arduino/PlatformIO library for LD06 LiDAR packet parsing and scan assembly.",
-  "keywords": ["ld06", "lidar", "slam", "esp32"],
+  "keywords": ["ld06", "lidar", "esp32"],
   "authors": [
     {
       "name": "LD06 Mapping contributors"

@@ -708,31 +708,18 @@ def main() -> None:
     parser.add_argument("--baud", "-b", type=int, default=460800, help="Serial baud rate")
     parser.add_argument("--host", default="0.0.0.0", help="Web viewer host")
     parser.add_argument("--web-port", type=int, default=8080, help="Web viewer port")
-    parser.add_argument("--slam", action="store_true", help="Enable IMU-assisted ICP SLAM")
     args = parser.parse_args()
 
     teleop = ControllerTeleopBridge(port=args.port, baud=args.baud)
     viewer = TeleopWebViewer(host=args.host, port=args.web_port)
 
-    slam = None
-    if args.slam:
-        import sys
-        from pathlib import Path
-        sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-        from slam.slam_thread import SlamThread
-        slam = SlamThread(teleop, viewer.robot_frame, viewer.server)
-
     try:
         teleop.connect()
         teleop.start()
-        if slam is not None:
-            slam.start()
         _run_loop(teleop, viewer)
     except KeyboardInterrupt:
         pass
     finally:
-        if slam is not None:
-            slam.stop()
         teleop.stop()
 
 
