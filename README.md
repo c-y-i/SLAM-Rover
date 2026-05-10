@@ -9,11 +9,39 @@ The rover pieces are still real subsystems in this workspace; `rover_stack/` kee
 | Folder | Description |
 |---|---|
 | [LD06_LiDAR/](LD06_LiDAR/) | Reusable Arduino/PlatformIO library for LD06 packet parsing and scan assembly |
-| [LD06_lidar/](LD06_lidar/) | ESP32 firmware/demo app that uses `LD06_LiDAR`, streams JSON over serial, and serves an optional web viewer |
+| [LD06_Demo/](LD06_Demo/) | ESP32 PlatformIO firmware demo that uses `LD06_LiDAR`, streams JSON over serial, and serves an optional web viewer |
 | [slam/](slam/) | Pure-Python 2D SLAM package and hardware-free simulator (`slam/sim.py`) |
 | [py_scripts/](py_scripts/) | Shared host-side Python workspace for sensor viewers and rover tools |
 | [rover_stack/](rover_stack/) | Rover firmware and tools |
 | [VL53L5CX_tof/](VL53L5CX_tof/) | Standalone 8x8 ToF depth streaming firmware and viewer |
+
+## Use The LD06 Library
+
+The reusable library is in [LD06_LiDAR/](LD06_LiDAR/). The installable package name is `LD06_LiDAR`, and sketches include the same public header:
+
+```cpp
+#include <LD06_LiDAR.h>
+```
+
+PlatformIO users can clone this repository and point their firmware project at the `LD06_LiDAR/` folder:
+
+```bash
+git clone https://github.com/c-y-i/LD06-mapping.git
+```
+
+```ini
+lib_deps =
+  symlink:///path/to/LD06-mapping/LD06_LiDAR
+```
+
+For a sibling firmware project inside this repo, the relative form is:
+
+```ini
+lib_deps =
+  symlink://../LD06_LiDAR
+```
+
+Arduino IDE users can download this repository as a ZIP, extract it, and copy only the `LD06_LiDAR/` folder into their Arduino `libraries/` folder. Restart the IDE, then open one of the examples from `LD06_LiDAR/examples/`.
 
 ## Try It Without Hardware
 
@@ -43,7 +71,7 @@ python -m slam.plot_sim --map nav2_tb3_sandbox
 ## Run The LD06 Firmware Demo
 
 ```bash
-cd LD06_lidar
+cd LD06_Demo
 platformio run --target upload
 platformio device monitor --baud 460800
 ```
@@ -76,9 +104,3 @@ cd rover_stack/bot        && platformio run --target upload
 ```
 
 Set `kBotMac` in `rover_stack/controller/src/main.cpp` to your bot's MAC address.
-
-## Agent Guides
-
-- [AGENTS/rover_stack.md](AGENTS/rover_stack.md)
-- [AGENTS/slam.md](AGENTS/slam.md)
-- [AGENTS/py_scripts.md](AGENTS/py_scripts.md)

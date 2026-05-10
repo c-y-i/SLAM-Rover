@@ -78,4 +78,3 @@ Live status panel shows I2C scan result, ToF/IMU connected state, FPS, and dista
 
 - Shared viewer code: [../py_scripts/sensor_viewers/vl53l5cx_viewer/](../py_scripts/sensor_viewers/vl53l5cx_viewer/)
 - `viewer/` folder here is a thin wrapper entrypoint only — edit the shared package for real changes
-- Agent guide: [../AGENTS/VL53L5CX_tof.md](../AGENTS/VL53L5CX_tof.md)

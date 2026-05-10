@@ -22,6 +22,9 @@ build/
 *.swp
 *~
 
+# Local agent notes
+AGENTS/
+
 # OS
 .DS_Store
 Thumbs.db
